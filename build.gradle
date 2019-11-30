@@ -54,8 +54,11 @@ artifacts {
 
 jar.enabled = false
 
-if ("true" == System.getenv("CI")) {
-    listDeps.enabled = false
+//Hacky JitCI Hack to not list dependencies
+if ("true" == System.getenv("CI") && !project.buildDir.exists()) {
+    project.tasks.replace("listDeps", Task).doLast {
+        project.buildDir.mkdirs()
+    }
 }
 
 //shadowJar.dependsOn(classes)
