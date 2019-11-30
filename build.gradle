@@ -54,5 +54,9 @@ artifacts {
 
 jar.enabled = false
 
+if ("true" == System.getenv("CI")) {
+    listDeps.enabled = false
+}
+
 //shadowJar.dependsOn(classes)
 build.dependsOn(shadowJar)
