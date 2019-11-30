@@ -32,6 +32,7 @@ shadowJar {
     relocate 'com.fox2code.repacker', 'com.fox2code.udk.repacker'
     relocate 'com.google.gson', 'com.fox2code.udk.gson'
     relocate 'org.objectweb.asm', 'com.fox2code.udk.asm'
+    classifier = null
 }
 
 jar.enabled = false
