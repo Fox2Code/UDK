@@ -1,0 +1,46 @@
+# Created by .ignore support plugin (hsz.mobi) and modified by Fox2Code
+### Gradle template
+.gradle
+/build/
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
+### Eclipse template
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+.externalToolBuilders/
+*.launch
+*.pydevproject
+.cproject
+.autotools
+.factorypath
+.buildpath
+.target
+.tern-project
+.texlipse
+.springBeans
+.recommenders/
+.apt_generated/
+.cache-main
+.scala_dependencies
+.worksheet
+### IntelliJ project files
+.idea
+*.iml
+*.iws
+*.ipr
+out
+gen
+### UDK Specific
+/run
+!/src
+gradle.properties

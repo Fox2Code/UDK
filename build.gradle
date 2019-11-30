@@ -1,0 +1,40 @@
+plugins {
+    id 'groovy'
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '5.2.0'
+}
+
+group 'com.fox2code'
+version '1.0.0'
+
+sourceCompatibility = targetCompatibility = 1.8
+compileJava {
+    sourceCompatibility = targetCompatibility = 1.8
+    options.encoding = 'UTF-8'
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'https://jitpack.io'
+    }
+}
+
+dependencies {
+    compileOnly gradleApi()
+    compileOnly localGroovy()
+    implementation 'com.github.Fox2Code:Repacker:1.2.0'
+    implementation 'com.google.code.gson:gson:2.8.6'
+    implementation 'org.ow2.asm:asm-commons:7.2'
+}
+
+shadowJar {
+    relocate 'com.fox2code.repacker', 'com.fox2code.udk.repacker'
+    relocate 'com.google.gson', 'com.fox2code.udk.gson'
+    relocate 'org.objectweb.asm', 'com.fox2code.udk.asm'
+}
+
+jar.enabled = false
+
+//shadowJar.dependsOn(classes)
+build.dependsOn(shadowJar)
