@@ -1,6 +1,7 @@
 plugins {
     id 'groovy'
     id 'java'
+    id 'maven'
     id 'com.github.johnrengelman.shadow' version '5.2.0'
 }
 
@@ -28,11 +29,27 @@ dependencies {
     implementation 'org.ow2.asm:asm-commons:7.2'
 }
 
+task sourcesJar(type: Jar, dependsOn: classes) {
+    archiveClassifier.set('sources')
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    archiveClassifier.set('javadoc')
+    from javadoc.destinationDir
+}
+
 shadowJar {
     relocate 'com.fox2code.repacker', 'com.fox2code.udk.repacker'
     relocate 'com.google.gson', 'com.fox2code.udk.gson'
     relocate 'org.objectweb.asm', 'com.fox2code.udk.asm'
     classifier = null
+}
+
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+    archives shadowJar
 }
 
 jar.enabled = false
