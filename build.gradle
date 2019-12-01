@@ -1,7 +1,6 @@
 plugins {
     id 'groovy'
     id 'java'
-    id 'maven'
     id 'com.github.johnrengelman.shadow' version '5.2.0'
 }
 
@@ -29,16 +28,6 @@ dependencies {
     implementation 'org.ow2.asm:asm-commons:7.2'
 }
 
-task sourcesJar(type: Jar, dependsOn: classes) {
-    archiveClassifier.set('sources')
-    from sourceSets.main.allSource
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    archiveClassifier.set('javadoc')
-    from javadoc.destinationDir
-}
-
 shadowJar {
     relocate 'com.fox2code.repacker', 'com.fox2code.udk.repacker'
     relocate 'com.google.gson', 'com.fox2code.udk.gson'
@@ -53,13 +42,6 @@ artifacts {
 }
 
 jar.enabled = false
-
-//Hacky JitCI Hack to not list dependencies
-if ("true" == System.getenv("CI") && !project.buildDir.exists()) {
-    project.tasks.replace("listDeps", Task).doLast {
-        project.buildDir.mkdirs()
-    }
-}
 
 //shadowJar.dependsOn(classes)
 build.dependsOn(shadowJar)
