@@ -61,6 +61,7 @@ public class Startup {
             URLClassPath = Class.forName("jdk.internal.loader.URLClassPath");
         }
         Method urLs = URLClassPath.getDeclaredMethod("getURLs");
+        Java9Fix.setAccessible(urLs);
         Class<?> ccl = Startup.class.getClassLoader().getClass();
         Field ucp = null;
         while (ucp == null && ccl != null) {

@@ -21,7 +21,7 @@ import java.nio.file.Files
 import java.text.Normalizer
 
 abstract class RepackerPlugin implements Plugin<Project> {
-    private static final String STARTUP_VER = "1.0.0"
+    private static final String STARTUP_VER = "1.0.1"
 
     File gradleHome
     File udkCache
@@ -121,6 +121,7 @@ abstract class RepackerPlugin implements Plugin<Project> {
             project.getDependencies().add("testCompileOnly", "com.fox2code:udk-startup:"+STARTUP_VER)
             project.getDependencies().add("compileOnly", "org.jetbrains:annotations:18.0.0")
             project.getDependencies().add("testCompileOnly", "org.jetbrains:annotations:18.0.0")
+            project.getDependencies().add("implementation", project.fileTree(dir: 'libs', include: ['*.jar']))
             String assetsIndex = repacker.getVersionManifest(config.version).get("assets").asString
             File currentAssetsIndexFile = new File(OSType.OSType.minecraftDir, "assets/indexes/"
                     +repacker.getVersionManifest(config.version).get("assets").asString+".json")

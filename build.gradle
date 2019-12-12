@@ -35,12 +35,6 @@ shadowJar {
     classifier = null
 }
 
-artifacts {
-    archives sourcesJar
-    archives javadocJar
-    archives shadowJar
-}
-
 jar.enabled = false
 
 //shadowJar.dependsOn(classes)
