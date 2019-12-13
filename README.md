@@ -13,7 +13,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath('com.github.Fox2Code:UDK:1.0.1') {
+        classpath('com.github.Fox2Code:UDK:1.0.0') {
             transitive = false
         }
     }
