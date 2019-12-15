@@ -9,13 +9,11 @@ It use [Repacker](https://github.com/Fox2Code/Repacker) to get a repacked versio
 buildscript {
     repositories {
         maven {
-            url 'https://jitpack.io'
+            url 'http://62.4.29.69/maven'
         }
     }
     dependencies {
-        classpath('com.github.Fox2Code:UDK:1.0.0') {
-            transitive = false
-        }
+        classpath 'com.fox2code:udk:1.0.1'
     }
 }
 
