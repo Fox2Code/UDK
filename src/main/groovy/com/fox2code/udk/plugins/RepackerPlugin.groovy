@@ -21,7 +21,7 @@ import java.nio.file.Files
 import java.text.Normalizer
 
 abstract class RepackerPlugin implements Plugin<Project> {
-    private static final String STARTUP_VER = "1.0.1"
+    private static final String STARTUP_VER = "1.1.0"
 
     File gradleHome
     File udkCache
@@ -55,9 +55,7 @@ abstract class RepackerPlugin implements Plugin<Project> {
         project.getRepositories().maven({
             url udkCache.toURI().toString()
         })
-        project.getRepositories().maven({
-            url "https://repo1.maven.org/maven2"
-        })
+        project.getRepositories().mavenCentral()
         project.getRepositories().maven({
             url "https://jitpack.io"
         })
@@ -81,7 +79,12 @@ abstract class RepackerPlugin implements Plugin<Project> {
             group = "UDK"
             description = "Run compiled client jar in gradle"
         }.get().dependsOn(project.getTasks().getByName("jar"))
-        project.extensions.create("udk", Config)
+        Jar sourcesJar = project.tasks.register("sourcesJar", Jar) {
+            classifier = 'sources'
+        }.get()
+        project.tasks.getByName("build").dependsOn(sourcesJar)
+        project.extensions.create("udk", provideConfig())
+        preInject()
         project.afterEvaluate {
             project.tasks.findAll().forEach({ task ->
                 if (task instanceof AbstractCompile) {
@@ -106,7 +109,8 @@ abstract class RepackerPlugin implements Plugin<Project> {
                 HashMap<String, byte[]> startupZip = new HashMap<>()
                 for (String e:[
                         "com/fox2code/udk/startup/Java9Fix.class",
-                        "com/fox2code/udk/startup/Startup.class"
+                        "com/fox2code/udk/startup/Startup.class",
+                        "com/fox2code/udk/startup/Internal.class"
                 ]) {
                     startupZip.put(e, getResource(e))
                 }
@@ -118,6 +122,7 @@ abstract class RepackerPlugin implements Plugin<Project> {
             } else {
                 project.getDependencies().add("testRuntimeOnly", "com.fox2code:udk-startup:" + STARTUP_VER)
             }
+            project.getDependencies().add("compileOnly", "com.fox2code:udk-startup:"+STARTUP_VER)
             project.getDependencies().add("testCompileOnly", "com.fox2code:udk-startup:"+STARTUP_VER)
             project.getDependencies().add("compileOnly", "org.jetbrains:annotations:18.0.0")
             project.getDependencies().add("testCompileOnly", "org.jetbrains:annotations:18.0.0")
@@ -175,7 +180,8 @@ abstract class RepackerPlugin implements Plugin<Project> {
             }
             File udkNativeCache = repacker.getClientRemappedFile(version).getParentFile()
             udkNativeCache = new File(udkNativeCache, OSType.getOSType().gradleExt)
-            SourceSet mainSourceSet = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName("main");
+            SourceSet mainSourceSet = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName("main")
+            sourcesJar.from mainSourceSet.allSource
             Task clearCache = project.tasks.getByName("clearCache")
             clearCache.doFirst {
                 delRecursiveSoft(udkCache)
@@ -235,6 +241,12 @@ abstract class RepackerPlugin implements Plugin<Project> {
         void setRunDir(String file) {
             this.runDir = new File(file).getAbsoluteFile()
         }
+    }
+
+    void preInject() {}
+
+    Class<? extends Config> provideConfig() {
+        return Config
     }
 
     abstract void injectLibraries(Config version)

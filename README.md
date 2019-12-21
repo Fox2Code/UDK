@@ -13,7 +13,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'com.fox2code:udk:1.0.1'
+        classpath 'com.fox2code:udk:1.1.0'
     }
 }
 
