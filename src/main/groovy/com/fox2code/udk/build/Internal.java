@@ -1,4 +1,4 @@
-package com.fox2code.udk.startup;
+package com.fox2code.udk.build;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

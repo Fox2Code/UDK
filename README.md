@@ -13,14 +13,14 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'com.fox2code:udk:1.1.0'
+        classpath 'com.fox2code:udk:1.2.0'
     }
 }
 
 apply plugin: 'udk.vanilla'
 
 udk {
-    version = "1.15"
+    version = "1.15.2"
 }
 ```
 

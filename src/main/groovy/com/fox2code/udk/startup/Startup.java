@@ -9,29 +9,31 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.util.Enumeration;
-import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public class Startup {
     private static String main = System.getProperty("udk.startup.main", "net.minecraft.client.main.Main");
-    private static File natives = new File(Objects.requireNonNull(System.getProperty("udk.startup.natives")));
+    private static File natives = System.getProperty("udk.startup.natives") == null ?
+            null : new File(System.getProperty("udk.startup.natives"));
 
     public static void main(String[] args) throws Exception {
         System.out.println("Initialising...");
-        boolean needSetup = true;
-        if (!natives.exists()) {
-            natives.mkdirs();
-        }
-        String[] files = natives.list();
-        if (files != null) for (String str: files) {
-            if (!str.startsWith(".")) {
-                needSetup = false;
-                break;
+        if (natives != null) {
+            boolean needSetup = true;
+            if (!natives.exists()) {
+                natives.mkdirs();
             }
-        }
-        if (needSetup) {
-            setup();
+            String[] files = natives.list();
+            if (files != null) for (String str : files) {
+                if (!str.startsWith(".")) {
+                    needSetup = false;
+                    break;
+                }
+            }
+            if (needSetup) {
+                setup();
+            }
         }
         System.setProperty("udk.startup.init", "true");
         Method method = Class.forName(main).getDeclaredMethod("main", String[].class);
@@ -43,7 +45,7 @@ public class Startup {
 
     public static void setup() throws Exception {
         System.out.println("Setup natives...");
-        String[] validExt = null;
+        String[] validExt;
         String os_name = System.getProperty("os.name").toLowerCase();
         if (os_name.contains("win")) {
             validExt = new String[]{".dll"};
