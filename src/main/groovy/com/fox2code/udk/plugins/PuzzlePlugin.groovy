@@ -31,7 +31,7 @@ class PuzzlePlugin extends RepackerPlugin {
         injectRepackVersion(config)
         injectVersionLibraries(config.version)
         project.getDependencies().add("implementation", "net.puzzle-mod-loader:puzzle-mod-loader:"+puzzleConfig.puzzleVersion)
-        project.getByName("jar") {
+        project.tasks.getByName("jar") {
             manifest {
                 attributes 'ModMain': puzzleConfig.modMain
                 attributes 'ModId': puzzleConfig.modID
@@ -39,6 +39,9 @@ class PuzzlePlugin extends RepackerPlugin {
                 attributes 'ModName': puzzleConfig.modName
                 if (puzzleConfig.modHook != null) {
                     attributes 'ModHook': puzzleConfig.modHook
+                }
+                if (puzzleConfig.modDesc != null) {
+                    attributes 'ModHook': puzzleConfig.modDesc
                 }
             }
         }

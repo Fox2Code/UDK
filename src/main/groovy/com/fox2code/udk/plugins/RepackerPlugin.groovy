@@ -362,6 +362,7 @@ abstract class RepackerPlugin implements Plugin<Project> {
             }
             // CLIENT LAUNCH
             JavaExec runClient = ((JavaExec) project.tasks.getByName("runClient")).args(mainClassArgs)
+            runClient.workingDir(config.runDir)
             runClient.main = config.useStartup ? "com.fox2code.udk.startup.Startup" : mainClass;
             runClient.classpath = mainSourceSet.runtimeClasspath;
             runClient.systemProperty("java.library.path", udkNativeCache.getPath());
@@ -371,6 +372,7 @@ abstract class RepackerPlugin implements Plugin<Project> {
                 runClient.systemProperty("udk.startup.main", mainClass)
             }
             JavaExec runClientJar = ((JavaExec) project.tasks.getByName("runClientJar")).args(mainClassArgs);
+            runClientJar.workingDir(config.runDir)
             runClientJar.main = config.useStartup ? "com.fox2code.udk.startup.Startup" : mainClass;
             runClientJar.classpath = project.files(((Jar) project.tasks.getByName("jar")).getArchiveFile().get().getAsFile()) + mainSourceSet.runtimeClasspath;
             runClientJar.systemProperty("java.library.path", udkNativeCache.getPath());
@@ -381,6 +383,7 @@ abstract class RepackerPlugin implements Plugin<Project> {
             }
             // SERVER LAUNCH
             JavaExec runServer = ((JavaExec) project.tasks.getByName("runServer")).args(mainClassArgsServer)
+            runServer.workingDir(config.runDir)
             runServer.doFirst {
                 repacker.repackServer(config.version)
             }
@@ -397,6 +400,7 @@ abstract class RepackerPlugin implements Plugin<Project> {
                 runServer.systemProperty("udk.startup.main", mainClassServer)
             }
             JavaExec runServerJar = ((JavaExec) project.tasks.getByName("runServerJar")).args(mainClassArgsServer);
+            runServerJar.workingDir(config.runDir)
             runServerJar.doFirst {
                 repacker.repackServer(config.version)
             }
