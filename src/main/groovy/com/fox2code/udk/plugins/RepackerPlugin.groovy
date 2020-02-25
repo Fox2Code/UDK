@@ -251,8 +251,10 @@ abstract class RepackerPlugin implements Plugin<Project> {
             String assetsIndex = repacker.getVersionManifest(config.version).get("assets").asString
             File currentAssetsIndexFile = new File(OSType.OSType.minecraftDir, "assets/indexes/"
                     +repacker.getVersionManifest(config.version).get("assets").asString+".json")
+            JsonObject objects;
+            File currentAssetsObjectDir = new File(OSType.OSType.minecraftDir, "assets/objects")
             if (!currentAssetsIndexFile.exists() || currentAssetsIndexFile.size() != repacker.getVersionManifest(config.version).getAsJsonObject("assetIndex").get("size").asLong) {
-                System.out.println("Downloading "+assetsIndex+" assets index...")
+                System.out.println("Downloading " + assetsIndex + " assets index...")
                 File assetsIndexes = currentAssetsIndexFile.getParentFile()
                 if (!assetsIndexes.exists()) {
                     assetsIndexes.mkdirs()
@@ -260,11 +262,39 @@ abstract class RepackerPlugin implements Plugin<Project> {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream()
                 Utils.download(repacker.getVersionManifest(config.version).getAsJsonObject("assetIndex").get("url").asString, baos)
                 byte[] indexData = baos.toByteArray()
-                File currentAssetsObjectDir = new File(OSType.OSType.minecraftDir, "assets/objects")
                 if (!currentAssetsObjectDir.exists()) {
                     currentAssetsObjectDir.mkdirs()
                 }
-                JsonObject objects = JsonParser.parseString(new String(indexData)).asJsonObject.getAsJsonObject("objects")
+                Files.write(currentAssetsIndexFile.toPath(), indexData)
+                objects = JsonParser.parseString(new String(indexData)).asJsonObject.getAsJsonObject("objects")
+            } else {
+                objects = JsonParser.parseString(new String(Files.readAllBytes(currentAssetsIndexFile.toPath()))).asJsonObject.getAsJsonObject("objects")
+                for (String item:["icons/icon_16x16.png","icons/icon_32x32.png", "icons/minecraft.icns",
+                                  "minecraft/icons/icon_16x16.png", "minecraft/icons/icon_32x32.png",
+                                  "minecraft/icons/minecraft.icns",
+                                  "minecraft/textures/gui/title/background/panorama_0.png",
+                                  "minecraft/textures/gui/title/background/panorama_1.png",
+                                  "minecraft/textures/gui/title/background/panorama_2.png",
+                                  "minecraft/textures/gui/title/background/panorama_3.png",
+                                  "minecraft/textures/gui/title/background/panorama_4.png",
+                                  "minecraft/textures/gui/title/background/panorama_5.png",
+                                  null]) {
+                    if (item == null) {
+                        objects = null
+                        break
+                    }
+                    JsonObject obj = objects.get(item).asJsonObject
+                    if (obj == null) {
+                        continue
+                    }
+                    String hash = obj.get("hash").asString
+                    File asset = new File(currentAssetsObjectDir, hash.substring(0, 2) + File.separator + hash)
+                    if (!asset.exists()) {
+                        break
+                    }
+                }
+            }
+            if (objects != null) {
                 int max = objects.size()
                 int progress = 0
                 long lastCheck = System.currentTimeMillis()
@@ -288,7 +318,6 @@ abstract class RepackerPlugin implements Plugin<Project> {
                         System.out.println("Downloading "+assetsIndex+" assets objects... ("+progress+"/"+max+")")
                     }
                 }
-                Files.write(currentAssetsIndexFile.toPath(), indexData)
             }
             injectLibraries(config)
             String mainClass = config.main
@@ -319,7 +348,7 @@ abstract class RepackerPlugin implements Plugin<Project> {
                 mainClassArgs[i] = mainClassArgs[i]
                         .replace("%run_dir%", config.runDir.getAbsolutePath())
                         .replace("%assets_dir%", new File(OSType.OSType.minecraftDir, "assets").getAbsolutePath())
-                        .replace("%assets_index%", config.runDir.getAbsolutePath())
+                        .replace("%assets_index%", assetsIndex)
                         .replace("%username%", config.username)
                         .replace("%mc_ver%", config.version)
             }
@@ -327,7 +356,7 @@ abstract class RepackerPlugin implements Plugin<Project> {
                 mainClassArgsServer[i] = mainClassArgsServer[i]
                         .replace("%run_dir%", config.runDir.getAbsolutePath())
                         .replace("%assets_dir%", new File(OSType.OSType.minecraftDir, "assets").getAbsolutePath())
-                        .replace("%assets_index%", config.runDir.getAbsolutePath())
+                        .replace("%assets_index%", assetsIndex)
                         .replace("%username%", config.username)
                         .replace("%mc_ver%", config.version)
             }
