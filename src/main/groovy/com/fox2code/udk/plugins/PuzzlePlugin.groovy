@@ -80,7 +80,7 @@ class PuzzlePlugin extends RepackerPlugin {
                     )) + (
                     puzzleConfig.modDesc == null ? "" : ("\n" +
                             "ModDesc: "+puzzleConfig.modDesc
-                    ))).getBytes(StandardCharsets.UTF_8))
+                    ))+"\n").getBytes(StandardCharsets.UTF_8))
             Utils.writeZIP(dummyZip, new FileOutputStream(dummy))
         }
     }
