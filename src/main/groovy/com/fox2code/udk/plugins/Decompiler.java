@@ -28,6 +28,11 @@ public class Decompiler {
             * This class is useless until someone fixes the sources import issue
             * Ctrl+Click on "FLAG_DECOMPILER" to see about what I'm talking about
             * Until then I'm sad :(
+            *
+            * Update: Seem because the repo is not Http/Https
+            * Maybe creating a fake local web server will do the trick
+            * (Note: If you wish to implement local fake web server
+            *      don't use port 80 or 443)
             * */
         }
     }
