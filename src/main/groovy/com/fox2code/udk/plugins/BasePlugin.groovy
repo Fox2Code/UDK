@@ -1,6 +1,6 @@
 package com.fox2code.udk.plugins
 
-import com.fox2code.repacker.Utils
+import com.fox2code.repacker.utils.Utils
 import com.fox2code.repacker.rebuild.ClassDataProvider
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -35,6 +35,10 @@ class BasePlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
+        if (this.project != null && this.project != project) {
+            this.getClass().newInstance().apply(project)
+            return
+        }
         this.project = project
         gradleHome = project.gradle.getGradleUserHomeDir()
         udkCache = new File(gradleHome, "udk")
@@ -115,6 +119,8 @@ class BasePlugin implements Plugin<Project> {
 
     static class BaseConfig {
         public boolean keepFramesByDefault = true
+        public boolean inline = true
+        public boolean laxCast = true
         public List<String> keepFrames
 
         void setKeepFrames(String... packages) {

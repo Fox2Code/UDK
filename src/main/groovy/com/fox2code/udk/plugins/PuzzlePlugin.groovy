@@ -1,6 +1,6 @@
 package com.fox2code.udk.plugins
 
-import com.fox2code.repacker.Utils
+import com.fox2code.repacker.utils.Utils
 import org.gradle.api.Task
 import org.gradle.api.tasks.JavaExec
 
@@ -41,7 +41,13 @@ class PuzzlePlugin extends RepackerPlugin {
                     attributes 'ModHook': puzzleConfig.modHook
                 }
                 if (puzzleConfig.modDesc != null) {
-                    attributes 'ModHook': puzzleConfig.modDesc
+                    attributes 'ModDesc': puzzleConfig.modDesc
+                }
+                if (puzzleConfig.modWebsite != null) {
+                    attributes 'ModWebsite': puzzleConfig.modWebsite
+                }
+                if (puzzleConfig.modUpdateURL != null) {
+                    attributes 'ModUpdateURL': puzzleConfig.modUpdateURL
                 }
             }
         }
@@ -80,6 +86,12 @@ class PuzzlePlugin extends RepackerPlugin {
                     )) + (
                     puzzleConfig.modDesc == null ? "" : ("\n" +
                             "ModDesc: "+puzzleConfig.modDesc
+                    )) + (
+                    puzzleConfig.modWebsite == null ? "" : ("\n" +
+                            "ModWebsite: "+puzzleConfig.modWebsite
+                    )) + (
+                    puzzleConfig.modUpdateURL == null ? "" : ("\n" +
+                            "ModUpdateURL: "+puzzleConfig.modUpdateURL
                     ))+"\n").getBytes(StandardCharsets.UTF_8))
             Utils.writeZIP(dummyZip, new FileOutputStream(dummy))
         }
@@ -97,6 +109,8 @@ class PuzzlePlugin extends RepackerPlugin {
         public String modName
         public String modHook
         public String modDesc
+        public String modWebsite
+        public String modUpdateURL
     }
 
     @Override

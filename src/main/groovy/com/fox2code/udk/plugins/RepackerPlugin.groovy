@@ -1,8 +1,8 @@
 package com.fox2code.udk.plugins
 
-import com.fox2code.repacker.Repacker
-import com.fox2code.repacker.Utils
+import com.fox2code.repacker.utils.Utils
 import com.fox2code.repacker.rebuild.ClassDataProvider
+import com.fox2code.udk.plugins.repacker.UdkRepacker
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
@@ -23,24 +23,20 @@ import javax.swing.JOptionPane
 import javax.swing.UIManager
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
+import java.nio.file.LinkOption
 import java.text.Normalizer
 
 abstract class RepackerPlugin implements Plugin<Project> {
-    public static final boolean FLAG_DECOMPILER = false /* Disabled until someone fixes it
-     I am unfortunately unable to fix it myself
-     Problem (Decompiled jar is not imported on Intellij) so if you read this message
-     and know how to fix that please fix the bug and open a pull request
-     (See Decompiler.java if you want to change the decompiler)
-     */
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create()
 
     static final String STARTUP_VER = "1.2.0"
-    static final String BUILD_VER = "1.0.0"
+    static final String BUILD_VER = "1.1.0"
+
+    static UdkRepacker repacker = null
 
     File gradleHome
     File udkCache
     File udkDataFile
-    Repacker repacker
     private Project project
     private ClassDataProvider classDataProvider
 
@@ -50,13 +46,20 @@ abstract class RepackerPlugin implements Plugin<Project> {
 
     ClassDataProvider getClassDataProvider() {
         if (classDataProvider == null) {
-            ArrayList<URL> urls = new ArrayList<>();
-            project.getConfigurations().getByName("compile").forEach { file ->
+            SourceSet mainSourceSet = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName("main")
+            final ArrayList<URL> urls = new ArrayList<>()
+            mainSourceSet.getCompileClasspath().forEach { file ->
                 try {
                     urls.add(file.toURI().toURL());
                 } catch (MalformedURLException ignored) {}
             }
-            classDataProvider = new ClassDataProvider(new URLClassLoader(urls.toArray(URL[]) as URL[]))
+            URLClassLoader urlClassLoader
+            try {
+                urlClassLoader = new URLClassLoader(urls.toArray(URL[]) as URL[])
+            } catch (NullPointerException ignored) {
+                throw new Error("Corrupted JDK")
+            }
+            classDataProvider = new ClassDataProvider(urlClassLoader)
         }
         return classDataProvider
     }
@@ -72,7 +75,9 @@ abstract class RepackerPlugin implements Plugin<Project> {
         gradleHome = project.gradle.getGradleUserHomeDir()
         udkCache = new File(gradleHome, "udk")
         udkDataFile = new File(gradleHome, "udk.json")
-        repacker = new Repacker(udkCache)
+        if (repacker == null) {
+            repacker = new UdkRepacker(udkCache)
+        }
         if (!udkCache.exists()) {
             udkCache.mkdirs()
         }
@@ -278,12 +283,17 @@ abstract class RepackerPlugin implements Plugin<Project> {
                                   "minecraft/textures/gui/title/background/panorama_3.png",
                                   "minecraft/textures/gui/title/background/panorama_4.png",
                                   "minecraft/textures/gui/title/background/panorama_5.png",
+                                  "minecraft/texts/splashes.txt",
                                   null]) {
                     if (item == null) {
                         objects = null
                         break
                     }
-                    JsonObject obj = objects.get(item).asJsonObject
+                    JsonElement tmp = objects.get(item)
+                    if (tmp == null) {
+                        continue
+                    }
+                    JsonObject obj = tmp.asJsonObject
                     if (obj == null) {
                         continue
                     }
@@ -443,6 +453,7 @@ abstract class RepackerPlugin implements Plugin<Project> {
         public boolean server = false
         public boolean useStartup = true
         public boolean nativeServer = false
+        public boolean open = false
 
         void setRunDir(File file) {
             this.runDir = file.getAbsoluteFile()
@@ -502,28 +513,44 @@ abstract class RepackerPlugin implements Plugin<Project> {
         if (config.server) {
             injectRepackServerVersion(config.version)
         } else {
-            injectRepackClientVersion(config.version)
+            injectRepackClientVersion(config.version, config.open)
         }
     }
 
-    void injectRepackClientVersion(String version) {
-        File remap = new File(udkCache, "net/minecraft/minecraft-remap/" + version + "/minecraft-remap-" + version + ".jar")
-        if (!remap.exists()) {
-            repacker.repackClient(version)
-            remap.getParentFile().mkdirs()
-            Files.move(repacker.getClientRemappedFile(version).toPath(), remap.toPath())
-        }
-        if (FLAG_DECOMPILER) {
-            int i = remap.getName().lastIndexOf('.')
-            File remapPom = new File(remap.getParentFile(), remap.getName().substring(0, i) + ".pom")
-            File remapSrc = new File(remap.getParentFile(), remap.getName().substring(0, i) + "-sources.jar")
-            if (!remapPom.exists() || !remapSrc.exists()) {
-                System.out.println("Decompiling client...")
-                Decompiler.decompile(remap, remapSrc)
-                injectPom(remapPom, version)
+    void injectRepackClientVersion(String version,final boolean open) {
+        repacker.repackClient(version)
+        if (open) {
+            File remap = repacker.getClientRemappedFile(version)
+            File revOpen = new File(udkCache, "net/minecraft/minecraft-open-remap/" + version + "/.rev")
+            File openJar = new File(udkCache, "net/minecraft/minecraft-open-remap/" + version + "/minecraft-open-remap-" + version + ".jar")
+            if (openJar.exists()) {
+                int rev = 0
+                if (revOpen.exists()) {
+                    List<String> lines = Files.readAllLines(revOpen.toPath())
+                    try {
+                        rev = Integer.parseInt(lines.get(0))
+                    } catch (Exception ignored) {}
+                }
+                if (rev < repacker.repackRevision()) {
+                    revOpen.delete()
+                } else {
+                    project.getDependencies().add("implementation", "net.minecraft:minecraft-open-remap:" + version)
+                    return
+                }
             }
+            OpenMC.openIfNeeded(remap, openJar)
+            revOpen.createNewFile()
+            try {
+                Files.setAttribute(revOpen.toPath(), "dos:hidden", Boolean.TRUE, LinkOption.NOFOLLOW_LINKS)
+            } catch (Exception ignored) {}
+            Files.write(revOpen.toPath(), (repacker.repackRevision()+"\n").getBytes(StandardCharsets.UTF_8))
+        /*}
+        [...] <= Comment because decompiler code need to be here
+        if (open) {*/
+            project.getDependencies().add("implementation", "net.minecraft:minecraft-open-remap:" + version)
+        } else {
+            project.getDependencies().add("implementation", "net.minecraft:minecraft-remap:" + version)
         }
-        project.getDependencies().add("implementation", "net.minecraft:minecraft-remap:" + version)
     }
 
     void injectRepackServerVersion(String version) {
@@ -531,15 +558,15 @@ abstract class RepackerPlugin implements Plugin<Project> {
         project.getDependencies().add("implementation", "net.minecraft:minecraft:" + version + ":server-remaped")
     }
 
-    static void injectPom(File file,String ver) {
+    static void injectPom(File file,String id,String ver) {
         Files.write(file.toPath(), ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                 "<project xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" +
                 "         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n" +
                 "    <modelVersion>4.0.0</modelVersion>\n" +
                 "    <groupId>net.minecraft</groupId>\n" +
-                "    <artifactId>minecraft-remap</artifactId>\n" +
+                "    <artifactId>"+id+"</artifactId>\n" +
                 "    <version>"+ver+"</version>\n" +
-                "    <name>minecraft</name>\n" +
+                "    <name>Minecraft "+ver+"</name>\n" +
                 "    <packaging>jar</packaging>\n" +
                 "    <dependencies>\n" +
                 "    </dependencies>\n" +

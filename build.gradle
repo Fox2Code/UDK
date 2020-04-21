@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'com.fox2code'
-version '1.2.3'
+version '1.3.0'
 
 sourceCompatibility = targetCompatibility = 1.8
 compileJava {
@@ -23,9 +23,9 @@ repositories {
 dependencies {
     compileOnly gradleApi()
     compileOnly localGroovy()
-    implementation 'com.fox2code:repacker:1.2.0'
+    implementation 'com.fox2code:repacker:1.3.3'
     implementation 'com.google.code.gson:gson:2.8.6'
-    implementation 'org.ow2.asm:asm-commons:7.3.1'
+    implementation 'org.ow2.asm:asm-commons:8.0.1'
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 }
 

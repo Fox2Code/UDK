@@ -1,13 +1,18 @@
 package com.fox2code.udk.build;
 
 @SuppressWarnings({"ConstantConditions", "unchecked"})
-public final class ptr<T> extends Object {
-    public ptr() {}
+public final class ptr<T> {
+    public ptr() {
+        this.value = null;
+        this.length = 1;
+    }
 
     public ptr(T value) {
         this.value = value;
+        this.length = 1;
     }
 
+    public final int length;
     public T value;
 
     public T get() {
@@ -40,6 +45,14 @@ public final class ptr<T> extends Object {
 
     public static <T> ptr<T> from(ptr<?> ptr) {
         return (ptr<T>) ptr;
+    }
+
+    public static Object[] asArray(Object[] object) {
+        return object;
+    }
+
+    public static Object[] asArray(ptr<?> ptr) {
+        return ptr.asArray();
     }
 
     public static <T> T valueOf(Object[] object) {

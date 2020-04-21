@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
  * Make method not usable by mods that put your mod as library
  * (Still accessible via reflection)
  */
-@Target({ElementType.FIELD,ElementType.METHOD})
+@Target({ElementType.CONSTRUCTOR,ElementType.FIELD,ElementType.METHOD})
 @Retention(RetentionPolicy.CLASS)
 public @interface Internal {
 }

@@ -3,6 +3,10 @@ Universal Developement Kit to develeop with any version of Minecraft with any ID
 
 It use [Repacker](https://github.com/Fox2Code/Repacker) to get a repacked version of Minecraft
 
+## Documentation
+
+[Documentation](https://github.com/Fox2Code/UDK/tree/master/docs)
+
 ## Gradle
 
 ```Groovy
@@ -13,7 +17,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'com.fox2code:udk:1.2.3'
+        classpath 'com.fox2code:udk:1.3.0'
     }
 }
 
