@@ -19,7 +19,7 @@ public class OpenMC implements Opcodes {
     private static final int MASK2 = ~(ACC_PROTECTED|ACC_PRIVATE|ACC_FINAL);
 
     public static void open(File from, File to) throws IOException {
-        System.out.println(ConsoleColors.YELLOW_BRIGHT + "Opening client jar...");
+        System.out.println(ConsoleColors.YELLOW_BRIGHT + "Opening client jar..." + ConsoleColors.RESET);
         Map<String, byte[]> zip = Utils.readZIP(new FileInputStream(from));
         for (Map.Entry<String, byte[]> entry:zip.entrySet()) {
             if (entry.getKey().startsWith("net/minecraft/") && entry.getKey().endsWith(".class")) {

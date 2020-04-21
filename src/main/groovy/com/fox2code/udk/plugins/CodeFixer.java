@@ -55,7 +55,7 @@ public class CodeFixer implements Opcodes {
         RepackerPlugin.delRecursiveSoft(dir2);
         patchDir(dir, dir2, classDataProvider, fixerCfg, counter);
         if (counter[0] != 0) {
-            System.out.println(ConsoleColors.CYAN+counter[0]+" bytecode compatibility issues fixed!");
+            System.out.println(ConsoleColors.CYAN+counter[0]+" bytecode compatibility issues fixed!" + ConsoleColors.RESET);
         }
     }
 
@@ -72,7 +72,7 @@ public class CodeFixer implements Opcodes {
                         patchClass(pathname, counter, fixerCfg);
                         patchClass2(pathname, new File(dir2, pathname.getName()), classDataProvider, fixerCfg);
                     } catch (IOException|RuntimeException e) {
-                        System.out.println(ConsoleColors.RED_BOLD+"Fail to patch " + pathname.getName());
+                        System.out.println(ConsoleColors.RED_BOLD+"Fail to patch " + pathname.getName() + ConsoleColors.RESET);
                     }
                 }
             }
