@@ -26,9 +26,22 @@ public class OpenMC implements Opcodes {
                 ClassWriter classWriter = new ClassWriter(0);
                 ClassReader classReader = new ClassReader(entry.getValue());
                 classReader.accept(new ClassVisitor(ASM7, classWriter) {
+                    private String name;
+
                     @Override
                     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+                        this.name = name;
                         super.visit(version, (access&MASK)|ACC_PUBLIC, name, signature, superName, interfaces);
+                    }
+
+                    @Override
+                    public void visitSource(String source, String debug) {
+                        int i = name.lastIndexOf("$");
+                        if (i != -1) try {
+                            Integer.parseUnsignedInt(name.substring(name.lastIndexOf("$")));
+                            source = name.substring(name.lastIndexOf('/'))+".java";
+                        } catch (NumberFormatException ignored) {}
+                        super.visitSource(source, debug);
                     }
 
                     @Override

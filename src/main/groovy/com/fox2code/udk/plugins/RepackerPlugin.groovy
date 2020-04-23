@@ -1,5 +1,6 @@
 package com.fox2code.udk.plugins
 
+import com.fox2code.repacker.utils.ConsoleColors
 import com.fox2code.repacker.utils.Utils
 import com.fox2code.repacker.rebuild.ClassDataProvider
 import com.fox2code.udk.plugins.repacker.UdkRepacker
@@ -210,7 +211,7 @@ abstract class RepackerPlugin implements Plugin<Project> {
             }
             startup = new File(startup, "udk-startup-"+STARTUP_VER+".jar")
             if (!startup.exists()) {
-                System.out.println("Extracting startup v"+STARTUP_VER+"...")
+                System.out.println(ConsoleColors.YELLOW_BRIGHT + "Extracting startup v"+STARTUP_VER+"..." + ConsoleColors.RESET)
                 HashMap<String, byte[]> startupZip = new HashMap<>()
                 for (String e:[
                         "com/fox2code/udk/startup/Java9Fix.class",
@@ -227,7 +228,7 @@ abstract class RepackerPlugin implements Plugin<Project> {
             }
             udkBuild = new File(udkBuild, "udk-build-"+BUILD_VER+".jar")
             if (!udkBuild.exists()) {
-                System.out.println("Extracting build v"+BUILD_VER+"...")
+                System.out.println(ConsoleColors.YELLOW_BRIGHT + "Extracting build v"+BUILD_VER+"..." + ConsoleColors.RESET)
                 HashMap<String, byte[]> buildZip = new HashMap<>()
                 for (String e:[
                         "com/fox2code/udk/build/Internal.class",
@@ -259,7 +260,7 @@ abstract class RepackerPlugin implements Plugin<Project> {
             JsonObject objects;
             File currentAssetsObjectDir = new File(OSType.OSType.minecraftDir, "assets/objects")
             if (!currentAssetsIndexFile.exists() || currentAssetsIndexFile.size() != repacker.getVersionManifest(config.version).getAsJsonObject("assetIndex").get("size").asLong) {
-                System.out.println("Downloading " + assetsIndex + " assets index...")
+                System.out.println(ConsoleColors.YELLOW_BRIGHT + "Downloading " + assetsIndex + " assets index..." + ConsoleColors.RESET)
                 File assetsIndexes = currentAssetsIndexFile.getParentFile()
                 if (!assetsIndexes.exists()) {
                     assetsIndexes.mkdirs()
@@ -308,7 +309,9 @@ abstract class RepackerPlugin implements Plugin<Project> {
                 int max = objects.size()
                 int progress = 0
                 long lastCheck = System.currentTimeMillis()
-                System.out.println("Downloading "+assetsIndex+" assets objects... (0/"+max+")")
+                System.out.println(ConsoleColors.YELLOW_BRIGHT +
+                        "Downloading "+assetsIndex+" assets objects... (0/"+max+")" +
+                        ConsoleColors.RESET)
                 for (Map.Entry<String, JsonElement> entry:objects.entrySet()) {
                     String hash = entry.value.asJsonObject.get("hash").asString
                     File asset = new File(currentAssetsObjectDir, hash.substring(0, 2))
@@ -325,7 +328,9 @@ abstract class RepackerPlugin implements Plugin<Project> {
                     progress++
                     if (lastCheck + 1000 < System.currentTimeMillis()) {
                         lastCheck = System.currentTimeMillis()
-                        System.out.println("Downloading "+assetsIndex+" assets objects... ("+progress+"/"+max+")")
+                        System.out.println(ConsoleColors.YELLOW_BRIGHT +
+                                "Downloading "+assetsIndex+" assets objects... ("+progress+"/"+max+")" +
+                                ConsoleColors.RESET)
                     }
                 }
             }

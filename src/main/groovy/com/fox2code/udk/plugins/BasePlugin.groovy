@@ -1,5 +1,6 @@
 package com.fox2code.udk.plugins
 
+import com.fox2code.repacker.utils.ConsoleColors
 import com.fox2code.repacker.utils.Utils
 import com.fox2code.repacker.rebuild.ClassDataProvider
 import org.gradle.api.Plugin
@@ -97,7 +98,7 @@ class BasePlugin implements Plugin<Project> {
             }
             udkBuild = new File(udkBuild, "udk-build-"+BUILD_VER+".jar")
             if (!udkBuild.exists()) {
-                System.out.println("Extracting build v"+BUILD_VER+"...")
+                System.out.println(ConsoleColors.YELLOW_BRIGHT + "Extracting build v"+BUILD_VER+"..." + ConsoleColors.RESET)
                 HashMap<String, byte[]> buildZip = new HashMap<>()
                 for (String e:[
                         "com/fox2code/udk/build/Internal.class",
