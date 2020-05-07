@@ -8,15 +8,18 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 public class OpenMC implements Opcodes {
     private static final int MASK = ~(ACC_PROTECTED|ACC_PRIVATE|ACC_SYNTHETIC|ACC_FINAL);
     private static final int MASK2 = ~(ACC_PROTECTED|ACC_PRIVATE|ACC_FINAL);
+    private static final int OPEN_REPACK_REV = 1;
 
     public static void open(File from, File to) throws IOException {
         System.out.println(ConsoleColors.YELLOW_BRIGHT + "Opening client jar..." + ConsoleColors.RESET);
@@ -39,7 +42,7 @@ public class OpenMC implements Opcodes {
                         int i = name.lastIndexOf("$");
                         if (i != -1) try {
                             Integer.parseUnsignedInt(name.substring(name.lastIndexOf("$")));
-                            source = name.substring(name.lastIndexOf('/'))+".java";
+                            source = name.substring(name.lastIndexOf('/')+1)+".java";
                         } catch (NumberFormatException ignored) {}
                         super.visitSource(source, debug);
                     }
@@ -49,7 +52,7 @@ public class OpenMC implements Opcodes {
                         if (outerName == null && innerName == null) {
                             return;
                         }
-                        super.visitInnerClass(name, outerName, innerName, access);
+                        super.visitInnerClass(name, outerName, innerName, (access&MASK)|ACC_PUBLIC);
                     }
 
                     @Override
@@ -75,14 +78,25 @@ public class OpenMC implements Opcodes {
     public static void openIfNeeded(File from, File to) throws IOException {
         File revFrom = new File(from.getParent(), ".rev");
         File revTo = new File(to.getParent(), ".rev");
-        boolean need = !to.exists() || !revTo.exists() || revFrom.length() != to.length() ||
+        File openRev = new File(to.getParent(), ".open-rev");
+        boolean need = !to.exists() || !revTo.exists() || !openRev.exists() || revFrom.length() != to.length() ||
                 !Arrays.equals(Files.readAllBytes(revFrom.toPath()),
                         Files.readAllBytes(revTo.toPath()));
+        if (!need) {
+            int rev = 0;
+            List<String> lines = Files.readAllLines(openRev.toPath());
+            try {
+                rev = Integer.parseInt(lines.get(0));
+            } catch (Exception ignored) {}
+            need = rev < OPEN_REPACK_REV;
+        }
         if (need) {
             open(from, to);
             Files.copy(revFrom.toPath(), revTo.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            Files.write(openRev.toPath(), (OPEN_REPACK_REV+"\n").getBytes(StandardCharsets.UTF_8));
             try {
                 Files.setAttribute(revTo.toPath(), "dos:hidden", Boolean.TRUE, LinkOption.NOFOLLOW_LINKS);
+                Files.setAttribute(openRev.toPath(), "dos:hidden", Boolean.TRUE, LinkOption.NOFOLLOW_LINKS);
             } catch (Exception ignored) {}
         }
     }

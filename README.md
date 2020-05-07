@@ -1,5 +1,5 @@
 # UDK
-Universal Developement Kit to develeop with any version of Minecraft with any IDE
+Universal Development Kit to develops with any version of Minecraft with any IDE
 
 It use [Repacker](https://github.com/Fox2Code/Repacker) to get a repacked version of Minecraft
 
@@ -17,7 +17,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'com.fox2code:udk:1.3.2'
+        classpath 'com.fox2code:udk:1.3.3'
     }
 }
 
