@@ -19,7 +19,7 @@ import java.util.Map;
 public class OpenMC implements Opcodes {
     private static final int MASK = ~(ACC_PROTECTED|ACC_PRIVATE|ACC_SYNTHETIC|ACC_FINAL);
     private static final int MASK2 = ~(ACC_PROTECTED|ACC_PRIVATE|ACC_FINAL);
-    private static final int OPEN_REPACK_REV = 1;
+    private static final int OPEN_REPACK_REV = 2;
 
     public static void open(File from, File to) throws IOException {
         System.out.println(ConsoleColors.YELLOW_BRIGHT + "Opening client jar..." + ConsoleColors.RESET);
@@ -30,10 +30,12 @@ public class OpenMC implements Opcodes {
                 ClassReader classReader = new ClassReader(entry.getValue());
                 classReader.accept(new ClassVisitor(ASM7, classWriter) {
                     private String name;
+                    private boolean i;
 
                     @Override
                     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
                         this.name = name;
+                        this.i = (access & ACC_INTERFACE) != 0;
                         super.visit(version, (access&MASK)|ACC_PUBLIC, name, signature, superName, interfaces);
                     }
 
@@ -65,7 +67,7 @@ public class OpenMC implements Opcodes {
 
                     @Override
                     public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-                        return super.visitField((access&MASK)|ACC_PUBLIC, name, descriptor, signature, value);
+                        return super.visitField((access&(MASK))|ACC_PUBLIC|(this.i?ACC_FINAL:0), name, descriptor, signature, value);
                     }
                 }, 0);
                 entry.setValue(classWriter.toByteArray());
