@@ -192,7 +192,15 @@ public class CodeFixer implements Opcodes {
         classReader.accept(new ClassVisitor(ASM7, new ClassRemapper(classWriter, PATCH_REMAPPER)) {
             @Override
             public MethodVisitor visitMethod(int access, String name,final String descriptor, String signature, String[] exceptions) {
-                return new MethodVisitor(ASM7, super.visitMethod(access|(INTERNAL.contains(name+descriptor)?ACC_SYNTHETIC:0), name, descriptor, signature, exceptions)) {
+                final boolean internal = INTERNAL.contains(name+descriptor);
+                return new MethodVisitor(ASM7, super.visitMethod(access|(internal?ACC_SYNTHETIC:0), name, descriptor, signature, exceptions)) {
+                    @Override
+                    public void visitLocalVariable(String name, String descriptor, String signature, Label start, Label end, int index) {
+                        if (!internal) {
+                            super.visitLocalVariable(name, descriptor, signature, start, end, index);
+                        }
+                    }
+
                     @Override
                     public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
                         if (opcode == INVOKESTATIC && owner.equals("com/fox2code/udk/build/ASM")) {

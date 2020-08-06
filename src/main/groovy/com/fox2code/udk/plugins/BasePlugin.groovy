@@ -74,9 +74,6 @@ class BasePlugin implements Plugin<Project> {
         }.get().doFirst {
             RepackerPlugin.delRecursiveSoft(udkCache)
         }
-        Jar sourcesJar = project.tasks.register("sourcesJar", Jar) {
-            classifier = 'sources'
-        }.get() as Jar
         project.tasks.getByName("build").dependsOn(sourcesJar)
         project.extensions.create("udk", BaseConfig)
         project.afterEvaluate {
@@ -96,6 +93,7 @@ class BasePlugin implements Plugin<Project> {
             if (!udkBuild.exists()) {
                 udkBuild.mkdirs()
             }
+            File udkBuildPom = new File(udkBuild, "udk-build-"+BUILD_VER+".pom")
             udkBuild = new File(udkBuild, "udk-build-"+BUILD_VER+".jar")
             if (!udkBuild.exists()) {
                 System.out.println(ConsoleColors.YELLOW_BRIGHT + "Extracting build v"+BUILD_VER+"..." + ConsoleColors.RESET)
@@ -110,11 +108,19 @@ class BasePlugin implements Plugin<Project> {
                 buildZip.put("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\n".getBytes(StandardCharsets.UTF_8))
                 Utils.writeZIP(buildZip, new FileOutputStream(udkBuild))
             }
+            if (!udkBuildPom.exists()) {
+                RepackerPlugin.injectPom(udkBuild, "com.fox2code","udk-build", BUILD_VER)
+            }
             project.getDependencies().add("compileOnly", "com.fox2code:udk-build:"+BUILD_VER)
             project.getDependencies().add("testCompileOnly", "com.fox2code:udk-build:"+BUILD_VER)
             project.getDependencies().add("implementation", project.fileTree(dir: 'libs', include: ['*.jar']))
             SourceSet mainSourceSet = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName("main")
-            sourcesJar.from mainSourceSet.allSource
+            if (project.tasks.findByName("sourcesJar") == null) {
+                Jar sourcesJar = project.tasks.register("sourcesJar", Jar) {
+                    classifier = 'sources'
+                }.get() as Jar
+                sourcesJar.from mainSourceSet.allSource
+            }
         }
     }
 

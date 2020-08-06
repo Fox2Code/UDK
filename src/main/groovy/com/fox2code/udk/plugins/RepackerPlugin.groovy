@@ -209,6 +209,7 @@ abstract class RepackerPlugin implements Plugin<Project> {
             if (!startup.exists()) {
                 startup.mkdirs()
             }
+            File startupPom = new File(startup, "udk-startup-"+STARTUP_VER+".pom")
             startup = new File(startup, "udk-startup-"+STARTUP_VER+".jar")
             if (!startup.exists()) {
                 System.out.println(ConsoleColors.YELLOW_BRIGHT + "Extracting startup v"+STARTUP_VER+"..." + ConsoleColors.RESET)
@@ -222,10 +223,14 @@ abstract class RepackerPlugin implements Plugin<Project> {
                 startupZip.put("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\n".getBytes(StandardCharsets.UTF_8))
                 Utils.writeZIP(startupZip, new FileOutputStream(startup))
             }
+            if (!startupPom.exists()) {
+                injectPom(startupPom, "com.fox2code","udk-startup", STARTUP_VER)
+            }
             File udkBuild = new File(udkCache, "com/fox2code/udk-build/"+BUILD_VER)
             if (!udkBuild.exists()) {
                 udkBuild.mkdirs()
             }
+            File udkBuildPom = new File(udkBuild, "udk-build-"+BUILD_VER+".pom")
             udkBuild = new File(udkBuild, "udk-build-"+BUILD_VER+".jar")
             if (!udkBuild.exists()) {
                 System.out.println(ConsoleColors.YELLOW_BRIGHT + "Extracting build v"+BUILD_VER+"..." + ConsoleColors.RESET)
@@ -239,6 +244,9 @@ abstract class RepackerPlugin implements Plugin<Project> {
                 }
                 buildZip.put("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\n".getBytes(StandardCharsets.UTF_8))
                 Utils.writeZIP(buildZip, new FileOutputStream(udkBuild))
+            }
+            if (!udkBuildPom.exists()) {
+                injectPom(udkBuildPom, "com.fox2code","udk-build", BUILD_VER)
             }
             if (config.useStartup) {
                 project.getDependencies().add("runtime", "com.fox2code:udk-startup:" + STARTUP_VER)
@@ -563,15 +571,14 @@ abstract class RepackerPlugin implements Plugin<Project> {
         project.getDependencies().add("implementation", "net.minecraft:minecraft:" + version + ":server-remaped")
     }
 
-    static void injectPom(File file,String id,String ver) {
+    static void injectPom(File file,String group,String id,String ver) {
         Files.write(file.toPath(), ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                 "<project xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" +
                 "         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n" +
                 "    <modelVersion>4.0.0</modelVersion>\n" +
-                "    <groupId>net.minecraft</groupId>\n" +
+                "    <groupId>"+group+"</groupId>\n" +
                 "    <artifactId>"+id+"</artifactId>\n" +
                 "    <version>"+ver+"</version>\n" +
-                "    <name>Minecraft "+ver+"</name>\n" +
                 "    <packaging>jar</packaging>\n" +
                 "    <dependencies>\n" +
                 "    </dependencies>\n" +
