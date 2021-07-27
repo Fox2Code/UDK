@@ -118,8 +118,8 @@ abstract class RepackerPlugin implements Plugin<Project> {
             url "https://libraries.minecraft.net"
         })
         project.compileJava {
-            sourceCompatibility = 1.8
-            targetCompatibility = 1.8
+            sourceCompatibility = 16
+            targetCompatibility = 16
             options.encoding = 'UTF-8'
         }
         project.eclipse {
@@ -249,9 +249,7 @@ abstract class RepackerPlugin implements Plugin<Project> {
                 injectPom(udkBuildPom, "com.fox2code","udk-build", BUILD_VER)
             }
             if (config.useStartup) {
-                project.getDependencies().add("runtime", "com.fox2code:udk-startup:" + STARTUP_VER)
-            } else {
-                project.getDependencies().add("testRuntimeOnly", "com.fox2code:udk-startup:" + STARTUP_VER)
+                project.getDependencies().add("api", "com.fox2code:udk-startup:" + STARTUP_VER)
             }
             project.getDependencies().add("compileOnly", "com.fox2code:udk-startup:"+STARTUP_VER)
             project.getDependencies().add("testCompileOnly", "com.fox2code:udk-startup:"+STARTUP_VER)
@@ -263,8 +261,7 @@ abstract class RepackerPlugin implements Plugin<Project> {
             project.getDependencies().add("testCompileOnly", "javax.annotation:javax.annotation-api:1.3.2")
             project.getDependencies().add("implementation", project.fileTree(dir: 'libs', include: ['*.jar']))
             String assetsIndex = repacker.getVersionManifest(config.version).get("assets").asString
-            File currentAssetsIndexFile = new File(OSType.OSType.minecraftDir, "assets/indexes/"
-                    +repacker.getVersionManifest(config.version).get("assets").asString+".json")
+            File currentAssetsIndexFile = new File(OSType.OSType.minecraftDir, "assets/indexes/" + repacker.getVersionManifest(config.version).get("assets").asString+".json")
             JsonObject objects;
             File currentAssetsObjectDir = new File(OSType.OSType.minecraftDir, "assets/objects")
             if (!currentAssetsIndexFile.exists() || currentAssetsIndexFile.size() != repacker.getVersionManifest(config.version).getAsJsonObject("assetIndex").get("size").asLong) {
@@ -510,6 +507,9 @@ abstract class RepackerPlugin implements Plugin<Project> {
     void injectVersionLibraries(String version) {
         JsonObject manifest = repacker.getVersionManifest(version)
         JsonArray libraries = manifest.getAsJsonArray("libraries")
+
+        System.out.println(ConsoleColors.CYAN_BOLD + "Injecting library")
+        int check = 0;
         for (JsonElement jsonElement : libraries) {
             String name = jsonElement.asJsonObject.get("name").asString
             if (name.startsWith("tv.twitch:twitch-") && name.contains("-platform") && !name.contains("natives")) {
@@ -519,6 +519,14 @@ abstract class RepackerPlugin implements Plugin<Project> {
             if (jsonElement.asJsonObject.has("natives") && (OSType.getOSType() == OSType.MACOS || !name.startsWith("ca.weblite:java-objc-bridge:"))) {
                 project.getDependencies().add("implementation", name + ":" + OSType.getOSType().gradleExt)
             }
+            check++
+            System.out.println(" " + ConsoleColors.CYAN + name + " Ok")
+        }
+
+        if (check == 0) {
+            System.out.println(ConsoleColors.RED + "Anomaly detected," + ConsoleColors.CYAN_BOLD + " 0 library" + ConsoleColors.CYAN + " have been loaded but the server say " + ConsoleColors.CYAN_BOLD + libraries.size() + ConsoleColors.CYAN + " remaining.")
+        } else {
+            System.out.println(ConsoleColors.GREEN + "All " + ConsoleColors.CYAN + "library has been loaded.")
         }
     }
 

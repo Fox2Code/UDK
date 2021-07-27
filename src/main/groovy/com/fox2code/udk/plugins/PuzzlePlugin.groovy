@@ -1,5 +1,6 @@
 package com.fox2code.udk.plugins
 
+import com.fox2code.repacker.utils.ConsoleColors
 import com.fox2code.repacker.utils.Utils
 import org.gradle.api.Task
 import org.gradle.api.tasks.JavaExec
@@ -9,6 +10,9 @@ import java.nio.charset.StandardCharsets
 class PuzzlePlugin extends RepackerPlugin {
     @Override
     void preInject() {
+        System.out.println(ConsoleColors.CYAN + "Warning : " + ConsoleColors.CYAN_BOLD + " PuzzleModLoader " + ConsoleColors.CYAN + " is " + ConsoleColors.RED + "DEPRECATED")
+        System.out.println(ConsoleColors.CYAN + " If you use the " + ConsoleColors.CYAN_BOLD + "Puzzle " + ConsoleColors.CYAN + " mod it will be useless without the functional " + ConsoleColors.CYAN_BOLD + "ModLoader")
+
         project.getRepositories().maven({
             url "https://repo.spongepowered.org/maven"
         })

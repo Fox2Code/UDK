@@ -8,6 +8,7 @@ It use [Repacker](https://github.com/Fox2Code/Repacker) to get a repacked versio
 [Documentation](https://github.com/Fox2Code/UDK/tree/master/docs)
 
 ## Gradle
+### Disclaimer the version `1.3.6` need Gradle 7.1 with `java-16` or higher if you use a version lower than `1.3.6` you can use Gradle `7.0` or lower
 
 ```Groovy
 buildscript {
@@ -17,14 +18,14 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'com.fox2code:udk:1.3.5'
+        classpath 'com.fox2code:udk:1.3.6'
     }
 }
 
 apply plugin: 'udk.vanilla'
 
 udk {
-    version = "1.15.2"
+    version = "1.17.1"
 }
 ```
 
