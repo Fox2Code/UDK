@@ -7,6 +7,8 @@ It use [Repacker](https://github.com/Fox2Code/Repacker) to get a repacked versio
 
 [Documentation](https://github.com/Fox2Code/UDK/tree/master/docs)
 
+`udk.version` use same patterns as [Repacker](https://github.com/Fox2Code/Repacker)
+
 ## Gradle
 
 ```Groovy
@@ -17,7 +19,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'com.fox2code:udk:1.3.6'
+        classpath 'com.fox2code:udk:1.4.0'
     }
 }
 
@@ -37,6 +39,3 @@ compileJava {
 }
 ```
 
-`udk.version` use same patterns as [Repacker](https://github.com/Fox2Code/Repacker)
-
-**WIP** Wait some time to get more documentation
