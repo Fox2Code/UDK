@@ -36,6 +36,7 @@ package com.fox2code.udk.plugins;
 
 import com.fox2code.repacker.rebuild.ClassDataProvider;
 import com.fox2code.repacker.utils.ConsoleColors;
+import com.fox2code.repacker.utils.Utils;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.Remapper;
@@ -81,29 +82,34 @@ public class CodeFixer implements Opcodes {
     }
 
     public static void patchClass(File file,int[] counter,final FixerCfg fixerCfg) throws IOException {
+        if (!fixerCfg.needBufferFix && !fixerCfg.laxCast) return;
         boolean[] patched = new boolean[]{false};
         final boolean laxCast = fixerCfg.laxCast;
         ClassReader classReader = new ClassReader(new FileInputStream(file));
         ClassNode classNode = null;
         ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-        classReader.accept(new ClassVisitor(ASM7, laxCast ? (classNode  = new ClassNode()) : classWriter) {
-            @Override
-            public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-                return new MethodVisitor(ASM7 ,super.visitMethod(access, name, descriptor, signature, exceptions)) {
-                    @Override
-                    public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
-                        if (opcode == INVOKEVIRTUAL && matchMethod(name) && matchCL(owner) && descriptor.endsWith("Buffer;") && matchCL(descriptor.substring(descriptor.indexOf(")L")+2, descriptor.length()-1))) {
-                            super.visitMethodInsn(INVOKEVIRTUAL, "java/nio/Buffer", name, descriptor.substring(0, descriptor.indexOf(")")+1)+"Ljava/nio/Buffer;", isInterface);
-                            super.visitTypeInsn(CHECKCAST, owner);
-                            counter[0]++;
-                            patched[0]=true;
-                            return;
+        ClassVisitor visitor = laxCast ? (classNode  = new ClassNode()) : classWriter;
+        if (fixerCfg.needBufferFix) {
+            visitor = new ClassVisitor(Utils.ASM_BUILD, visitor) {
+                @Override
+                public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+                    return new MethodVisitor(Utils.ASM_BUILD ,super.visitMethod(access, name, descriptor, signature, exceptions)) {
+                        @Override
+                        public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
+                            if (opcode == INVOKEVIRTUAL && matchMethod(name) && matchCL(owner) && descriptor.endsWith("Buffer;") && matchCL(descriptor.substring(descriptor.indexOf(")L")+2, descriptor.length()-1))) {
+                                super.visitMethodInsn(INVOKEVIRTUAL, "java/nio/Buffer", name, descriptor.substring(0, descriptor.indexOf(")")+1)+"Ljava/nio/Buffer;", isInterface);
+                                super.visitTypeInsn(CHECKCAST, owner);
+                                counter[0]++;
+                                patched[0]=true;
+                                return;
+                            }
+                            super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
                         }
-                        super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
-                    }
-                };
-            }
-        }, 0);
+                    };
+                }
+            };
+        }
+        classReader.accept(visitor, 0);
         if (laxCast) {
             for (MethodNode methodNode : classNode.methods) {
                 AbstractInsnNode abstractInsnNode = methodNode.instructions.getFirst();
@@ -152,7 +158,7 @@ public class CodeFixer implements Opcodes {
         ClassReader classReader = new ClassReader(new FileInputStream(in));
         HashSet<String> INTERNAL = new HashSet<>();
         boolean[] keepFrames = new boolean[]{false};
-        classReader.accept(new ClassVisitor(ASM7) {
+        classReader.accept(new ClassVisitor(Utils.ASM_BUILD) {
             @Override
             public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
                 if (!(keepFrames[0] = fixerCfg.keepFrames(name))) {
@@ -162,7 +168,7 @@ public class CodeFixer implements Opcodes {
 
             @Override
             public MethodVisitor visitMethod(int access,final String name,final String mDescriptor, String signature, String[] exceptions) {
-                return new MethodVisitor(ASM7) {
+                return new MethodVisitor(Utils.ASM_BUILD) {
                     @Override
                     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
                         if (descriptor.equals("Lcom/fox2code/udk/build/Internal;")) {
@@ -176,7 +182,7 @@ public class CodeFixer implements Opcodes {
 
             @Override
             public FieldVisitor visitField(int access,final String name,final String fDescriptor, String signature, Object value) {
-                return new FieldVisitor(ASM7) {
+                return new FieldVisitor(Utils.ASM_BUILD) {
                     @Override
                     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
                         if (descriptor.equals("Lcom/fox2code/udk/build/Internal;")) {
@@ -189,11 +195,11 @@ public class CodeFixer implements Opcodes {
             }
         }, ClassReader.SKIP_CODE);
         ClassWriter classWriter = keepFrames[0] ? classDataProvider.newClassWriter() : new ClassWriter(ClassWriter.COMPUTE_MAXS);
-        classReader.accept(new ClassVisitor(ASM7, new ClassRemapper(classWriter, PATCH_REMAPPER)) {
+        classReader.accept(new ClassVisitor(Utils.ASM_BUILD, new ClassRemapper(classWriter, PATCH_REMAPPER)) {
             @Override
             public MethodVisitor visitMethod(int access, String name,final String descriptor, String signature, String[] exceptions) {
                 final boolean internal = INTERNAL.contains(name+descriptor);
-                return new MethodVisitor(ASM7, super.visitMethod(access|(internal?ACC_SYNTHETIC:0), name, descriptor, signature, exceptions)) {
+                return new MethodVisitor(Utils.ASM_BUILD, super.visitMethod(access|(internal?ACC_SYNTHETIC:0), name, descriptor, signature, exceptions)) {
                     @Override
                     public void visitLocalVariable(String name, String descriptor, String signature, Label start, Label end, int index) {
                         if (!internal) {
@@ -255,105 +261,6 @@ public class CodeFixer implements Opcodes {
                                 case "__B":
                                 case "__Z":
                                     break;
-                            }
-                            patched[0]=true;
-                        } else if (opcode == INVOKESTATIC && fixerCfg.inline && (owner.equals("java/lang/Math") || owner.equals("java/lang/StrictMath") || owner.equals("net/minecraft/util/Mth"))) {
-                            if (descriptor.indexOf('I') != -1) {
-                                switch (name) {
-                                    default:
-                                        super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
-                                        return;
-                                    case "abs": {
-                                        Label label = new Label();
-                                        super.visitInsn(DUP);
-                                        super.visitJumpInsn(IFGE, label);
-                                        super.visitInsn(INEG);
-                                        super.visitLabel(label);
-                                        break;
-                                    }
-                                    case "max": {
-                                        Label label = new Label();
-                                        super.visitInsn(DUP2);
-                                        super.visitJumpInsn(IF_ICMPGE, label);
-                                        super.visitInsn(SWAP);
-                                        super.visitLabel(label);
-                                        super.visitInsn(DUP);
-                                        break;
-                                    }
-                                    case "min": {
-                                        Label label = new Label();
-                                        super.visitInsn(DUP2);
-                                        super.visitJumpInsn(IF_ICMPLE, label);
-                                        super.visitInsn(SWAP);
-                                        super.visitLabel(label);
-                                        super.visitInsn(DUP);
-                                        break;
-                                    }
-                                }
-                            } else if (descriptor.indexOf('D') != -1) {
-                                switch (name) {
-                                    default:
-                                        super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
-                                        return;
-                                    case "toRadians":
-                                        super.visitLdcInsn(180D);
-                                        super.visitInsn(DDIV);
-                                        super.visitLdcInsn(Math.PI);
-                                        super.visitInsn(DMUL);
-                                        break;
-                                    case "toDegrees":
-                                        super.visitLdcInsn(180D);
-                                        super.visitInsn(DMUL);
-                                        super.visitLdcInsn(Math.PI);
-                                        super.visitInsn(DDIV);
-                                        break;
-                                    case "abs": {
-                                        Label label = new Label();
-                                        super.visitInsn(DUP2);
-                                        super.visitInsn(DCONST_0);
-                                        super.visitInsn(DCMPG);
-                                        super.visitJumpInsn(IFGE, label);
-                                        super.visitInsn(DNEG);
-                                        super.visitLabel(label);
-                                        break;
-                                    }
-                                }
-                            } else if (descriptor.indexOf('F') != -1) {
-                                switch (name) {
-                                    default:
-                                        super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
-                                        return;
-                                    case "abs": {
-                                        Label label = new Label();
-                                        super.visitInsn(DUP);
-                                        super.visitInsn(FCONST_0);
-                                        super.visitInsn(FCMPG);
-                                        super.visitJumpInsn(IFGE, label);
-                                        super.visitInsn(FNEG);
-                                        super.visitLabel(label);
-                                        break;
-                                    }
-                                    case "max": {
-                                        Label label = new Label();
-                                        super.visitInsn(DUP2);
-                                        super.visitInsn(FCMPL);
-                                        super.visitJumpInsn(IFGE, label);
-                                        super.visitInsn(SWAP);
-                                        super.visitLabel(label);
-                                        super.visitInsn(POP);
-                                        break;
-                                    }
-                                    case "min": {
-                                        Label label = new Label();
-                                        super.visitInsn(DUP2);
-                                        super.visitInsn(FCMPL);
-                                        super.visitJumpInsn(IFLE, label);
-                                        super.visitInsn(SWAP);
-                                        super.visitLabel(label);
-                                        super.visitInsn(POP);
-                                        break;
-                                    }
-                                }
                             }
                             patched[0]=true;
                         } else if (owner.equals("com/fox2code/udk/build/ptr")) {
@@ -528,14 +435,14 @@ public class CodeFixer implements Opcodes {
     }
 
     public static class FixerCfg {
-        public boolean inline;
+        public final boolean needBufferFix;
         public boolean laxCast;
         public boolean keepFramesByDefault;
         public HashSet<String> strict;
         public ArrayList<String> pkgs;
 
-        public FixerCfg(BasePlugin.BaseConfig config) {
-            this.inline = config.inline;
+        public FixerCfg(BasePlugin.BaseConfig config,boolean needBufferFix) {
+            this.needBufferFix = needBufferFix;
             this.laxCast = config.laxCast;
             if (!(keepFramesByDefault = config.keepFramesByDefault) && config.keepFrames != null) {
                 strict = new HashSet<>();

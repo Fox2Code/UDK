@@ -65,7 +65,7 @@ public enum OSType {
             return WINDOWS;
         } else if (os_name.contains("mac")) {
             return MACOS;
-        } else if (os_name.contains("nux")) {
+        } else if (os_name.contains("nux") || os_name.contains("nix")) {
             return LINUX;
         } else {
             throw new Error("Invalid System: \""+os_name+"\"");

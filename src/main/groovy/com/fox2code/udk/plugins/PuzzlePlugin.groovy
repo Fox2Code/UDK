@@ -18,6 +18,7 @@ class PuzzlePlugin extends RepackerPlugin {
         })
         project.getRepositories().maven({
             url "http://62.4.29.69/maven"
+            allowInsecureProtocol = true
         })
     }
 

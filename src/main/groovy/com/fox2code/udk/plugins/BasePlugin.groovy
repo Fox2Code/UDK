@@ -10,6 +10,7 @@ import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.compile.AbstractCompile
+import org.gradle.api.tasks.compile.JavaCompile
 
 import java.nio.charset.StandardCharsets
 
@@ -54,8 +55,6 @@ class BasePlugin implements Plugin<Project> {
         })
         project.getRepositories().mavenCentral()
         project.compileJava {
-            sourceCompatibility = 1.8
-            targetCompatibility = 1.8
             options.encoding = 'UTF-8'
         }
         project.eclipse {
@@ -78,7 +77,9 @@ class BasePlugin implements Plugin<Project> {
         project.extensions.create("udk", BaseConfig)
         project.afterEvaluate {
             BaseConfig config = ((BaseConfig) project.extensions.getByName("udk"))
-            CodeFixer.FixerCfg fixerCfg = new CodeFixer.FixerCfg(config)
+            String sourceCompat = (project.tasks.getByName("compileJava") as JavaCompile).sourceCompatibility
+            CodeFixer.FixerCfg fixerCfg = new CodeFixer.FixerCfg(config,
+                    sourceCompat == null || sourceCompat.startsWith("1."))
             project.tasks.findAll().forEach({ task ->
                 if (task instanceof AbstractCompile) {
                     final File dest = ((AbstractCompile) task).destinationDir
@@ -126,7 +127,6 @@ class BasePlugin implements Plugin<Project> {
 
     static class BaseConfig {
         public boolean keepFramesByDefault = true
-        public boolean inline = true
         public boolean laxCast = true
         public List<String> keepFrames
 

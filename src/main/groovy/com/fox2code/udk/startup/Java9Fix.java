@@ -3,18 +3,22 @@ package com.fox2code.udk.startup;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
 public class Java9Fix {
     private static final boolean java8 = System.getProperty("java.version").startsWith("1.");
+    private static final boolean bypass;
     private static Object unsafe;
     private static Class<?> unsafeClass;
 
     static {
+        boolean bypassTmp = java8;
         if (!java8) try {
             unsafeClass = Class.forName("sun.misc.Unsafe");
             Field field = unsafeClass.getDeclaredField("theUnsafe");
             field.setAccessible(true);
             unsafe = field.get(null);
+            bypassTmp = true;
             try {
                 //Disable Java9+ Reflection Warnings
                 Method putObjectVolatile = unsafeClass.getDeclaredMethod("putObjectVolatile", Object.class, long.class, Object.class);
@@ -24,9 +28,8 @@ public class Java9Fix {
                 Long offset = (Long) staticFieldOffset.invoke(unsafe, loggerField);
                 putObjectVolatile.invoke(unsafe, loggerClass, offset, null);
             } catch (ReflectiveOperationException ignored) {}
-        } catch (ReflectiveOperationException e) {
-            throw new InternalError("Couldn't init bypass!");
-        }
+        } catch (ReflectiveOperationException ignored) {}
+        bypass = bypassTmp;
     }
 
     private static Field access;
@@ -34,7 +37,7 @@ public class Java9Fix {
     private static long accessOffset;
 
     public static void setAccessible(AccessibleObject field) throws ReflectiveOperationException {
-        if (java8) {
+        if (java8 || !bypass) {
             field.setAccessible(true);
         } else {
             if (access == null) {

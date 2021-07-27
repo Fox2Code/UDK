@@ -28,7 +28,7 @@ public class OpenMC implements Opcodes {
             if (entry.getKey().startsWith("net/minecraft/") && entry.getKey().endsWith(".class")) {
                 ClassWriter classWriter = new ClassWriter(0);
                 ClassReader classReader = new ClassReader(entry.getValue());
-                classReader.accept(new ClassVisitor(ASM7, classWriter) {
+                classReader.accept(new ClassVisitor(Utils.ASM_BUILD, classWriter) {
                     private String name;
                     private boolean i;
 

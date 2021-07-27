@@ -19,10 +19,6 @@ This block can contain many value
   specific classes or packages frames, to target a package the string must end
   with `.` or `/` (example: `just/some/package/`)
   
-- **boolean** `inline` (Default: true)  
-  The value of this field is whenever the methods inlining is enabled or not.  
-  Inlining has a small performance boost on your compiled code.
-  
 - **boolean** `laxCast` (Default: true)  
   This field allows disabling/enabling laxCast.
   laxCast help avoid `ClassCastException` on numbers by modifying bytecode equivalent

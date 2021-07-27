@@ -19,6 +19,7 @@ import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.compile.AbstractCompile
+import org.gradle.api.tasks.compile.JavaCompile
 
 import javax.swing.JOptionPane
 import javax.swing.UIManager
@@ -30,7 +31,7 @@ import java.text.Normalizer
 abstract class RepackerPlugin implements Plugin<Project> {
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create()
 
-    static final String STARTUP_VER = "1.2.0"
+    static final String STARTUP_VER = "1.2.1"
     static final String BUILD_VER = "1.1.0"
 
     static UdkRepacker repacker = null
@@ -182,7 +183,9 @@ abstract class RepackerPlugin implements Plugin<Project> {
         preInject()
         project.afterEvaluate {
             Config config = ((Config) project.extensions.getByName("udk"))
-            CodeFixer.FixerCfg fixerCfg = new CodeFixer.FixerCfg(config)
+            String sourceCompat = (project.tasks.getByName("compileJava") as JavaCompile).sourceCompatibility
+            CodeFixer.FixerCfg fixerCfg = new CodeFixer.FixerCfg(config,
+                    sourceCompat == null || sourceCompat.startsWith("1."))
             project.tasks.findAll().forEach({ task ->
                 if (task instanceof AbstractCompile) {
                     final File dest = ((AbstractCompile) task).destinationDir

@@ -8,6 +8,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -51,33 +52,12 @@ public class Startup {
             validExt = new String[]{".dll"};
         } else if (os_name.contains("mac")) {
             validExt = new String[]{".dylib", ".jnilib"};
-        } else if (os_name.contains("nux")) {
+        } else if (os_name.contains("nux") || os_name.contains("nix")) {
             validExt = new String[]{".so"};
         } else {
             throw new Error("Invalid System: \""+os_name+"\"");
         }
-        Class<?> URLClassPath;
-        try {
-            URLClassPath = Class.forName("sun.misc.URLClassPath");
-        } catch (ClassNotFoundException e) {
-            URLClassPath = Class.forName("jdk.internal.loader.URLClassPath");
-        }
-        Method urLs = URLClassPath.getDeclaredMethod("getURLs");
-        Java9Fix.setAccessible(urLs);
-        Class<?> ccl = Startup.class.getClassLoader().getClass();
-        Field ucp = null;
-        while (ucp == null && ccl != null) {
-            try {
-                ucp = ccl.getDeclaredField("ucp");
-            } catch (ReflectiveOperationException e) {
-                ccl = ccl.getSuperclass();
-            }
-        }
-        if (ucp == null) {
-            throw new NoSuchFieldException("Unable to find URLClassPath field in the current class loader");
-        }
-        Java9Fix.setAccessible(ucp);
-        URL[] urls = (URL[]) urLs.invoke(ucp.get(Startup.class.getClassLoader()));
+        URL[] urls = getLoadedURLs();
         for (URL url:urls) {
             if (!new File(url.getFile()).isFile()) {
                 continue;
@@ -109,5 +89,41 @@ public class Startup {
             }
         }
         System.out.println("Setup finished!");
+    }
+
+    public static URL[] getLoadedURLs() throws Exception {
+        final ClassLoader cl = Startup.class.getClassLoader();
+        if (cl instanceof URLClassLoader) {
+            return ((URLClassLoader) cl).getURLs();
+        }
+        Class<?> ccl = cl.getClass();
+        Field ucp = null;
+        while (ucp == null && ccl != null) {
+            try {
+                Method getURLs = ccl.getDeclaredMethod("getURLs");
+                try {
+                    Java9Fix.setAccessible(getURLs);
+                } catch (ReflectiveOperationException ignored) {}
+                return (URL[]) getURLs.invoke(cl);
+            } catch (Exception ignored) {}
+            try {
+                ucp = ccl.getDeclaredField("ucp");
+            } catch (ReflectiveOperationException e) {
+                ccl = ccl.getSuperclass();
+            }
+        }
+        if (ucp == null) {
+            throw new NoSuchFieldException("Unable to find URLClassPath field in the current class loader");
+        }
+        Java9Fix.setAccessible(ucp);
+        Class<?> URLClassPath;
+        try {
+            URLClassPath = Class.forName("sun.misc.URLClassPath");
+        } catch (ClassNotFoundException e) {
+            URLClassPath = Class.forName("jdk.internal.loader.URLClassPath");
+        }
+        Method urLs = URLClassPath.getDeclaredMethod("getURLs");
+        Java9Fix.setAccessible(urLs);
+        return  (URL[]) urLs.invoke(ucp.get(cl));
     }
 }
